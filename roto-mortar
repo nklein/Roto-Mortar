@@ -3,7 +3,7 @@
 #+sbcl
 (declaim (sb-ext:muffle-conditions t))
 
-(require :asdf)
+(load #P"./systems/asdf.lisp")
 (setf asdf:*central-registry* (list *default-pathname-defaults*))
 
 (dolist (package '(#P"alexandria-2009-08-13/"
