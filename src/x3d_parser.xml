@@ -1,0 +1,56 @@
+<parser_generator root="x3d" from="/X3D">
+  <struct name="property">
+    <field type="string" name="name" from="@name" />
+    <field type="string" name="value" from="@content" />
+  </struct>
+
+  <struct name="mesh">
+    <field type="string" name="texture coordinate indexes"
+	   from="@texCoordIndex" />
+    <field type="string" name="coordinate indexes"
+	   from="@coordIndex" />
+    <field type="string" name="coordinates"
+	   from="/Coordinate@point" />
+    <field type="string" name="texture coordinates"
+	   from="/TextureCoordinate@point" />
+  </struct>
+
+  <struct name="geometry object">
+    <field type="string" name="translation" from="@translation" />
+    <field type="string" name="scale" from="@scale" />
+    <field type="string" name="rotation" from="@rotation" />
+    <field type="string" name="diffuse color"
+	   from="/Shape/Appearance/Material@diffuseColor" />
+    <field type="string" name="specular color"
+	   from="/Shape/Appearance/Material@specularColor" />
+    <field type="string" name="shininess"
+	   from="/Shape/Appearance/Material@shininess" />
+    <field type="string" name="transparency"
+	   from="/Shape/Appearance/Material@transparency" />
+    <field type="string" name="texture"
+	   from="/Shape/Appearance/ImageTexture@url" />
+    <field name="meshes">
+      <array>
+	<array_element type="mesh" from="/Shape/IndexedFaceSet" />
+      </array>
+    </field>
+  </struct>
+
+  <struct name="x3d">
+    <field name="meta properties">
+      <array>
+	<array_element type="property" from="/head/meta" />
+      </array>
+    </field>
+    <field name="ground color" type="string"
+	   from="/Scene/Background@groundColor" />
+    <field name="sky color" type="string"
+	   from="/Scene/Background@skyColor" />
+
+    <field name="shape list">
+      <array>
+	<array_element type="geometry object" from="/Scene/Transform" />
+      </array>
+    </field>
+  </struct>
+</parser_generator>
