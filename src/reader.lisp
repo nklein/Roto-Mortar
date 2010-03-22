@@ -93,7 +93,9 @@
   (let ((handler (make-instance 'sax-handler :root-path root-path
                                              :root-type root-type)))
     (typecase source
-      (pathname (with-open-file (stream source :element-type 'unsigned-byte)
+      (pathname (with-open-file (stream (merge-pathnames source
+							 roto-mortar:*data-directory*)
+					:element-type 'unsigned-byte)
                   (cxml:parse-stream stream handler)))
       (t (cxml:parse source handler)))))
 
@@ -167,17 +169,33 @@
 ;;; =================================================================
 ;;; x3d-geometry-object struct
 ;;; =================================================================
+(defun read-png (basename)
+  (with-open-file (input (merge-pathnames basename
+					  roto-mortar:*data-directory*)
+			 :element-type '(unsigned-byte 8))
+    (png:8-bit-image (png:decode input))))
+
+(defun read-real-array (string &optional (position 0) values)
+  (let ((eof (gensym "EOF-")))
+    (multiple-value-bind (object position)
+	(read-from-string string nil eof :start position)
+      (cond
+	((eql object eof) (nreverse values))
+	((typep object 'real) (read-real-array string position
+					       (cons object values)))
+	(t (read-real-array string position values))))))
+
 (defmethod data progn ((handler sax-handler) (item x3d-geometry-object) path value)
   (with-slots (translation scale rotation diffuse-color specular-color shininess transparency texture) item
     (case path
-      (:|@translation| (setf translation value))
-      (:|@scale| (setf scale value))
-      (:|@rotation| (setf rotation value))
-      (:|/Shape/Appearance/Material@diffuseColor| (setf diffuse-color value))
-      (:|/Shape/Appearance/Material@specularColor| (setf specular-color value))
-      (:|/Shape/Appearance/Material@shininess| (setf shininess value))
-      (:|/Shape/Appearance/Material@transparency| (setf transparency value))
-      (:|/Shape/Appearance/ImageTexture@url| (setf texture value)))))
+      (:|@translation| (setf translation (read-real-array value)))
+      (:|@scale| (setf scale (read-real-array value)))
+      (:|@rotation| (setf rotation (read-real-array value)))
+      (:|/Shape/Appearance/Material@diffuseColor| (setf diffuse-color (read-real-array value)))
+      (:|/Shape/Appearance/Material@specularColor| (setf specular-color (read-real-array value)))
+      (:|/Shape/Appearance/Material@shininess| (setf shininess (read-from-string value)))
+      (:|/Shape/Appearance/Material@transparency| (setf transparency (read-from-string value)))
+      (:|/Shape/Appearance/ImageTexture@url| (setf texture (read-png value))))))
 
 (defmethod start progn ((handler sax-handler) (item x3d-geometry-object) path)
   (declare (ignore item))

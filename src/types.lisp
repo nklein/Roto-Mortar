@@ -62,9 +62,9 @@
    (rotation :initarg :rotation :accessor x3d-rotation :type string)
    (diffuse-color :initarg :diffuse-color :accessor x3d-diffuse-color :type string)
    (specular-color :initarg :specular-color :accessor x3d-specular-color :type string)
-   (shininess :initarg :shininess :accessor x3d-shininess :type string)
-   (transparency :initarg :transparency :accessor x3d-transparency :type string)
-   (texture :initarg :texture :accessor x3d-texture :type string)
+   (shininess :initarg :shininess :accessor x3d-shininess :type real)
+   (transparency :initarg :transparency :accessor x3d-transparency :type real)
+   (texture :initarg :texture :accessor x3d-texture :type png:image)
    (meshes :initarg :meshes :accessor x3d-meshes :type list :initform nil)))
 
 (defclass x3d-x3d ()
