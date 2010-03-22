@@ -64,7 +64,7 @@
    (specular-color :initarg :specular-color :accessor x3d-specular-color :type string)
    (shininess :initarg :shininess :accessor x3d-shininess :type real)
    (transparency :initarg :transparency :accessor x3d-transparency :type real)
-   (texture :initarg :texture :accessor x3d-texture :type png:image)
+   (texture :initarg :texture :accessor x3d-texture :type integer)
    (meshes :initarg :meshes :accessor x3d-meshes :type list :initform nil)))
 
 (defclass x3d-x3d ()

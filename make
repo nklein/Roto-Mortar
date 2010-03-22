@@ -15,13 +15,14 @@
 		   #P"cxml-2008-11-30/"
 		   #P"puri-1.5.1/"
 		   #P"trivial-features_0.5/"
-		   #P"trivial-gray-streams-2008-11-02/"))
+		   #P"trivial-gray-streams-2008-11-02/"
+		   #P"zpb-ttf-1.0/"))
   (pushnew (merge-pathnames package #P"./systems/")
 	   asdf:*central-registry*))
 
-(with-output-to-string (*error-output*)
-  (with-output-to-string (*standard-output*)
+(with-output-to-string (*error-output-not*)
+  (with-output-to-string (*standard-output-not*)
     (asdf:operate 'asdf:load-op :roto-mortar :verbose nil)))
 
-(roto-mortar:main #+sbcl sb-ext:*posix-argv*
-		  #-sbcl nil)
+(in-package :roto-mortar)
+(save-and-die)

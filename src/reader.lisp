@@ -173,7 +173,34 @@
   (with-open-file (input (merge-pathnames basename
 					  roto-mortar:*data-directory*)
 			 :element-type '(unsigned-byte 8))
-    (png:8-bit-image (png:decode input))))
+    (let* ((image (png:decode input))
+	   (texture (first (gl:gen-textures 1)))
+	   (width (png:image-width image))
+	   (height (png:image-height image))
+	   (format (case (png:image-channels image)
+		     (1 :luminance)
+		     (2 :luminance-alpha)
+		     (3 :rgb)
+		     (4 :rgba)))
+	   (type (case (png:image-bit-depth image)
+		   (8 :unsigned-byte)
+		   (16 :unsigned-short))))
+      (gl:bind-texture :texture-2d texture)
+      (gl:tex-parameter :texture-2d :texture-min-filter :linear)
+      (gl:tex-parameter :texture-2d :texture-mag-filter :linear)
+      (gl:tex-image-2d :texture-2d 0 format width height 0 format type
+		       (make-array (list (array-total-size image))
+				   :displaced-to image
+				   :element-type (array-element-type image)))
+      texture)))
+
+(defvar *known-png-files* (make-hash-table :test #'equalp))
+(defun get-png-as-texture-id (basename)
+  (let ((id (gethash basename *known-png-files*)))
+    (unless id
+      (setf id (read-png basename))
+      (setf (gethash basename *known-png-files*) id))
+    id))
 
 (defun read-real-array (string &optional (position 0) values)
   (let ((eof (gensym "EOF-")))
@@ -185,17 +212,22 @@
 					       (cons object values)))
 	(t (read-real-array string position values))))))
 
+(defun read-rotation (string)
+  (let ((raw (nreverse (read-real-array string))))
+    (cons (first raw)
+	  (nreverse (rest raw)))))
+
 (defmethod data progn ((handler sax-handler) (item x3d-geometry-object) path value)
   (with-slots (translation scale rotation diffuse-color specular-color shininess transparency texture) item
     (case path
       (:|@translation| (setf translation (read-real-array value)))
       (:|@scale| (setf scale (read-real-array value)))
-      (:|@rotation| (setf rotation (read-real-array value)))
+      (:|@rotation| (setf rotation (read-rotation value)))
       (:|/Shape/Appearance/Material@diffuseColor| (setf diffuse-color (read-real-array value)))
       (:|/Shape/Appearance/Material@specularColor| (setf specular-color (read-real-array value)))
       (:|/Shape/Appearance/Material@shininess| (setf shininess (read-from-string value)))
       (:|/Shape/Appearance/Material@transparency| (setf transparency (read-from-string value)))
-      (:|/Shape/Appearance/ImageTexture@url| (setf texture (read-png value))))))
+      (:|/Shape/Appearance/ImageTexture@url| (setf texture (get-png-as-texture-id value))))))
 
 (defmethod start progn ((handler sax-handler) (item x3d-geometry-object) path)
   (declare (ignore item))
