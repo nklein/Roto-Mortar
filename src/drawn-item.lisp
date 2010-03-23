@@ -32,9 +32,9 @@
 			       x3d:diffuse-color
 			       x3d:texture x3d:meshes) item
     (gl:with-pushed-matrix
+      (apply #'gl:translate x3d:translation)
       (apply #'gl:scale x3d:scale)
       (apply #'gl:rotate x3d:rotation)
-      (apply #'gl:translate x3d:translation)
       (with-slots (elapsed-time) screen
 	(gl:rotate (* 20 elapsed-time) 1.0 1.0 1.0))
       (gl:with-pushed-attrib (:current-bit)

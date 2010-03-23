@@ -1,7 +1,7 @@
 (in-package :roto-mortar)
 
 (defclass start-screen (screen)
-  ((title-position :initform (list 0.0 100.0 -5.0))))
+  ((title-position :initform (list 0.0 400.0 200.0))))
 
 (defmethod update-screen progn ((screen start-screen) elapsed)
   (with-slots (elapsed-time title-position) screen
