@@ -214,7 +214,7 @@
 
 (defun read-rotation (string)
   (let ((raw (nreverse (read-real-array string))))
-    (cons (first raw)
+    (cons (/ (* 180.0 (first raw)) pi)
 	  (nreverse (rest raw)))))
 
 (defmethod data progn ((handler sax-handler) (item x3d-geometry-object) path value)

@@ -4,7 +4,7 @@
   ((visible :initarg :visible))
   (:default-initargs :visible t))
 
-(defgeneric draw (drawn-item))
+(defgeneric draw (drawn-item screen))
 
 (defun expand-coordinates-from-indexes (mesh)
   (with-slots (x3d:coordinate-indexes x3d:texture-coordinate-indexes
@@ -27,7 +27,7 @@
 	    (mapc #'expand-coordinates-from-indexes x3d:meshes))
 	  item)))))
 
-(defmethod draw ((item x3d:x3d-geometry-object))
+(defmethod draw ((item x3d:x3d-geometry-object) screen)
   (with-slots (x3d:translation x3d:scale x3d:rotation
 			       x3d:diffuse-color
 			       x3d:texture x3d:meshes) item
@@ -35,12 +35,14 @@
       (apply #'gl:scale x3d:scale)
       (apply #'gl:rotate x3d:rotation)
       (apply #'gl:translate x3d:translation)
+      (with-slots (elapsed-time) screen
+	(gl:rotate (* 20 elapsed-time) 1.0 1.0 1.0))
       (gl:with-pushed-attrib (:current-bit)
 	(apply #'gl:color x3d:diffuse-color)
 	(gl:bind-texture :texture-2d x3d:texture)
-	(mapc #'draw x3d:meshes)))))
+	(mapc #'(lambda (mm) (draw mm screen)) x3d:meshes)))))
 
-(defmethod draw ((item x3d:x3d-mesh))
+(defmethod draw ((item x3d:x3d-mesh) screen)
   (with-slots (x3d:coordinates x3d:texture-coordinates) item
     (labels ((emit-vert (vv tt)
 	       (gl:tex-coord (first tt) (second tt))

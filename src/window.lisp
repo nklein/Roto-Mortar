@@ -57,7 +57,7 @@
   (gl:load-identity)
   (glu:perspective 30.0 (/ width height) 0.1 100)
   (glu:look-at 0.0 0.0 -10.0  0.0 0.0 0.0  0.0 1.0 0.0)
-  (gl:scale 1.5 1.5 1.5)
+  (gl:scale 0.015 0.015 0.015)
   (gl:matrix-mode :modelview))
 
 (defmethod glut:keyboard ((w roto-mortar-window) key xx yy)

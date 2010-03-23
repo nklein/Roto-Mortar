@@ -20,10 +20,8 @@
 (defgeneric draw-screen (screen)
   (:method-combination progn :most-specific-last)
   (:method progn ((screen screen))
-     (with-slots (items elapsed-time) screen
-       (gl:with-pushed-matrix
-	   (gl:rotate (* 25 elapsed-time) 1.0 1.0 1.0)
-	 (mapc #'draw items)))
+     (with-slots (items) screen
+       (mapc #'(lambda (ii) (draw ii screen)) items))
      nil))
 
 (defgeneric unload-screen (screen)
