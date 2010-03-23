@@ -106,6 +106,7 @@
       (gl:translate (/ (- bx1 bx2) 2) (/ (- by1 by2) 2) 0)
 
       (gl:with-pushed-attrib (:current-bit :color-buffer-bit :line-bit
+					   :depth-buffer-bit
 				           :hint-bit :stencil-buffer-bit)
 	;; antialias lines
 	(gl:enable :blend)
@@ -128,6 +129,7 @@
 	      (render-string string font t cutoff))
 
 	  ;; fill in area subject to stencil
+	  (gl:disable :depth-test)
 	  (gl:color-mask t t t t)
 	  (gl:stencil-func :equal 1 1)
 	  (draw-quad bx1 by1 bx2 by2)))))

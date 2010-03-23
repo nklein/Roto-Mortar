@@ -8,7 +8,8 @@
   (:method-combination progn :most-specific-last)
   (:method progn ((screen screen))
     (with-slots (elapsed-time) screen
-      (setf elapsed-time 0.0))))
+      (setf elapsed-time 0.0))
+    (update-screen screen 0.0)))
 
 (defgeneric update-screen (screen elapsed)
   (:method-combination progn :most-specific-last)
@@ -30,11 +31,21 @@
     (declare (ignore screen))))
 
 (defgeneric key-down (screen key)
-  (:method-combination progn :most-specific-first)
+  (:method-combination progn :most-specific-last)
   (:method progn ((screen screen) (key character))
     (declare (ignore screen key))))
 
 (defgeneric key-up (screen key)
-  (:method-combination progn :most-specific-first)
+  (:method-combination progn :most-specific-last)
   (:method progn ((screen screen) (key character))
+    (declare (ignore screen key))))
+
+(defgeneric mouse-down (screen button)
+  (:method-combination progn :most-specific-last)
+  (:method progn ((screen screen) button)
+    (declare (ignore screen button))))
+
+(defgeneric mouse-up (screen key)
+  (:method-combination progn :most-specific-last)
+  (:method progn ((screen screen) button)
     (declare (ignore screen key))))

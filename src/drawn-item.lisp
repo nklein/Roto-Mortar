@@ -10,12 +10,16 @@
   (with-slots (x3d:coordinate-indexes x3d:texture-coordinate-indexes
                x3d:coordinates        x3d:texture-coordinates) mesh
     (labels ((expand (ccs iis)
-	       (mapcar #'(lambda (ii) (nth ii ccs)) iis)))
+	       (mapcar #'(lambda (ii) (nth ii ccs)) iis))
+	     (expand-tex (ccs iis)
+	       (mapcar #'(lambda (uv) (list (first uv) (- 1 (second uv))))
+		       (expand ccs iis))))
       (setf x3d:coordinates
 	    (mapcar #'(lambda (iis) (expand x3d:coordinates iis))
 		    x3d:coordinate-indexes))
       (setf x3d:texture-coordinates
-	    (mapcar #'(lambda (iis) (expand x3d:texture-coordinates iis))
+	    (mapcar #'(lambda (iis)
+			(expand-tex x3d:texture-coordinates iis))
 		    x3d:texture-coordinate-indexes)))))
 
 (defun load-x3d-item (filename)
@@ -32,11 +36,10 @@
 			       x3d:diffuse-color
 			       x3d:texture x3d:meshes) item
     (gl:with-pushed-matrix
+      (gl:rotate 90.0 1.0 0.0 0.0) 
       (apply #'gl:translate x3d:translation)
       (apply #'gl:scale x3d:scale)
       (apply #'gl:rotate x3d:rotation)
-      (with-slots (elapsed-time) screen
-	(gl:rotate (* 20 elapsed-time) 1.0 1.0 1.0))
       (gl:with-pushed-attrib (:current-bit)
 	(apply #'gl:color x3d:diffuse-color)
 	(gl:bind-texture :texture-2d x3d:texture)

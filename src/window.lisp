@@ -4,7 +4,7 @@
   (/ (get-internal-real-time) internal-time-units-per-second))
 
 (defclass roto-mortar-window (glut:window)
-  ((screen    :initform (make-instance 'start-screen))
+  ((screen    :initform (make-instance 'main-menu-screen))
    (last-tick :initform (get-time))
    (keys-down :initform 0))
   (:default-initargs :width 800
@@ -55,10 +55,16 @@
   (gl:viewport 0 0 width height)
   (gl:matrix-mode :projection)
   (gl:load-identity)
-  (glu:perspective 30.0 (/ width height) 0.1 100)
-  (glu:look-at 0.0 0.0 -10.0  0.0 0.0 0.0  0.0 1.0 0.0)
-  (gl:scale 0.015 0.015 0.015)
+  (glu:perspective 48.1 (/ width height) 0.1 100)
+  (glu:look-at 42.707 -30.273 10.528  17.638 -13.781 3.567  0.0 0.0 1.0)
   (gl:matrix-mode :modelview))
+
+(defmethod glut:mouse ((w roto-mortar-window) button state x y)
+  (declare (ignore xx yy))
+  (with-slots (screen) w
+    (case state
+      (:down (possible-new-screen w (mouse-down screen button)))
+      (:up   (possible-new-screen w (mouse-up   screen button))))))
 
 (defmethod glut:keyboard ((w roto-mortar-window) key xx yy)
   (declare (ignore xx yy))

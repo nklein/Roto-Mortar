@@ -4,10 +4,11 @@
   ())
 
 (defmethod load-screen progn ((screen main-menu-screen))
-  (let ((cube (load-x3d-item #P"cube.x3d")))
-    (when cube
-      (with-slots (items) screen
-	(push cube items)))))
+  (let ((scene (load-x3d-item #P"scene.x3d"))
+	(base  (load-x3d-item #P"base.x3d")))
+    (with-slots (items) screen
+      (push scene items)
+      (push base items))))
 
 (defmethod unload-screen progn ((screen main-menu-screen))
   (with-slots (items) screen
