@@ -5,10 +5,14 @@
 
 (defmethod load-screen progn ((screen main-menu-screen))
   (let ((scene (load-x3d-item #P"scene.x3d"))
-	(base  (load-x3d-item #P"base.x3d")))
+	(base  (load-x3d-item #P"base.x3d"))
+	(angle (load-x3d-item #P"angle.x3d"))
+	(dist  (load-x3d-item #P"distance.x3d")))
     (with-slots (items) screen
-      (push scene items)
-      (push base items))))
+      (push dist items)
+      (push angle items)
+      (push base items)
+      (push scene items))))
 
 (defmethod unload-screen progn ((screen main-menu-screen))
   (with-slots (items) screen

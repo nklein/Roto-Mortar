@@ -17,7 +17,7 @@
   (gl:cull-face :back)
   (gl:front-face :cw)
   (gl:shade-model :smooth)
-  (gl:blend-func :one :zero)
+  (gl:blend-func :one-minus-src-alpha :src-alpha)
   (gl:enable :blend :texture-2d)
   (gl:enable :depth-test)
   (gl:depth-func :lequal)

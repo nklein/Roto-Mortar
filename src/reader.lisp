@@ -264,6 +264,9 @@
              (push (make-instance 'x3d-property) items))
       (:|/Scene/Transform|
              (push nil paths)
+             (push (make-instance 'x3d-geometry-object) items))
+      (:|/Scene/Collision/Transform|
+             (push nil paths)
              (push (make-instance 'x3d-geometry-object) items)))))
 
 (defmethod end progn ((handler sax-handler) (item x3d-x3d) path)
@@ -278,5 +281,9 @@
              (pop paths)
              (with-slots (shape-list) item
                (setf shape-list
+                     (append shape-list (list (pop items))))))
+      (:|/Scene/Collision/Transform|
+             (pop paths)
+             (with-slots (shape-list) item
+               (setf shape-list
                      (append shape-list (list (pop items)))))))))
-
