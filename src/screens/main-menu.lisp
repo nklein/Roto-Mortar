@@ -68,8 +68,8 @@
 (defmethod load-screen progn ((screen main-menu-screen))
   (let ((angle-geom (load-x3d-shadow-volume #P"angle.x3d"))
 	(dist-geom (load-x3d-shadow-volume #P"distance.x3d"))
-	(scene (load-x3d-item #P"scene.x3d"))
-	(base  (load-x3d-item #P"base.x3d")))
+	(scene (load-x3d-item #P"scene-baked.x3d"))
+	(base  (load-x3d-item #P"base-baked.x3d")))
     (with-slots (items overlays distance angle) screen
       (with-slots (geometry) angle
 	(setf geometry angle-geom))
