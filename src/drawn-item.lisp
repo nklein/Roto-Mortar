@@ -3,13 +3,27 @@
 (defclass drawn-item ()
   ((visible :initarg :visible)
    (is-shadow-volume  :initarg :is-shadow-volume)
-   (geometry :initarg :geometry))
+   (geometry :initarg :geometry)
+   (elapsed-time :initarg :elapsed-time))
   (:default-initargs :visible t
                      :is-shadow-volume nil
-                     :geometry nil))
+                     :geometry nil
+		     :elapsed-time 0.0))
 
-(defgeneric draw (drawn-item screen))
-(defgeneric draw-as-shadow-volume (drawn-item screen))
+(defclass drawn-image-item (drawn-item)
+  ((texture :initarg :texture)
+   (width :initarg :width)
+   (height :initarg :height)))
+
+(defclass message-overlay (drawn-item)
+  ((icon :initarg :icon)
+   (timeout :initarg :timeout)
+   (timeout-callback :initarg :timeout-callback)
+   (lines :initarg :lines)))
+
+(defmethod update-item ((drawn-item drawn-item) elapsed)
+  (with-slots (elapsed-time) drawn-item
+    (incf elapsed-time elapsed)))
 
 (defun expand-coordinates-from-indexes (mesh)
   (with-slots (x3d:coordinate-indexes x3d:texture-coordinate-indexes
@@ -40,33 +54,67 @@
 (defun load-x3d-shadow-volume (filename &rest args)
   (apply #'load-x3d-item filename :is-shadow-volume t args))
 
+(defun load-image (filename width height)
+  (make-instance 'drawn-image-item
+		 :texture (x3d:get-png-as-texture-id filename)
+		 :width width
+		 :height height))
+
+(defun make-message-overlay (icon-filename &key (timeout 5)
+			                        timeout-callback
+			                        lines)
+  (make-instance 'message-overlay
+		 :icon (load-image icon-filename 100 100)
+		 :timeout timeout
+		 :timeout-callback timeout-callback
+		 :lines lines))
+
+(defmethod draw ((item drawn-image-item) screen)
+  (with-slots (visible texture width height) item
+    (when visible
+      (gl:with-pushed-attrib (:current-bit :texture-bit)
+	(gl:color 1 1 1 0)
+	(gl:bind-texture :texture-2d texture)
+	(gl:with-primitives :quads
+	  (gl:tex-coord 0 1) (gl:vertex 0 0)
+	  (gl:tex-coord 0 0) (gl:vertex 0 height)
+	  (gl:tex-coord 1 0) (gl:vertex width height)
+	  (gl:tex-coord 1 1) (gl:vertex width 0))))))
+
 (defmethod draw ((item drawn-item) screen)
   (with-slots (geometry is-shadow-volume) item
     (if is-shadow-volume
 	(draw-as-shadow-volume geometry screen)
-	(draw geometry screen))))
+	(with-slots (x3d:translation x3d:scale x3d:rotation) geometry
+	  (gl:with-pushed-matrix
+	    (apply #'gl:translate x3d:translation)
+	    (apply #'gl:scale x3d:scale)
+	    (apply #'gl:rotate x3d:rotation)
+	    (draw geometry screen))))))
 
 (defmethod draw-as-shadow-volume ((item drawn-item) screen)
-  (with-slots (geometry) item
-    (draw-as-shadow-volume geometry screen)))
+  (gl:with-pushed-attrib (:enable-bit)
+    (gl:disable :texture-2d)
+    (with-slots (geometry) item
+      (with-slots (x3d:translation x3d:scale x3d:rotation) geometry
+	(gl:with-pushed-matrix
+	  (apply #'gl:translate x3d:translation)
+	  (apply #'gl:scale x3d:scale)
+	  (apply #'gl:rotate x3d:rotation)
+	  (draw-as-shadow-volume geometry screen))))))
 
 (defmethod draw ((item x3d:x3d-geometry-object) screen)
   (with-slots (x3d:translation x3d:scale x3d:rotation
 			       x3d:diffuse-color x3d:transparency
 			       x3d:texture x3d:meshes) item
-    (gl:with-pushed-matrix
-      (gl:rotate 90.0 1.0 0.0 0.0)
-      (apply #'gl:translate x3d:translation)
-      (apply #'gl:scale x3d:scale)
-      (apply #'gl:rotate x3d:rotation)
-      (gl:with-pushed-attrib (:current-bit)
-	(gl:color (first x3d:diffuse-color)
-		  (second x3d:diffuse-color)
-		  (third x3d:diffuse-color)
-		  x3d:transparency)
-	(when (slot-boundp item 'x3d:texture)
-	  (gl:bind-texture :texture-2d x3d:texture))
-	(mapc #'(lambda (mm) (draw mm screen)) x3d:meshes)))))
+    (gl:with-pushed-attrib (:current-bit)
+      (gl:color (first x3d:diffuse-color)
+		(second x3d:diffuse-color)
+		(third x3d:diffuse-color)
+		x3d:transparency)
+      (when (slot-boundp item 'x3d:texture)
+	(gl:bind-texture :texture-2d x3d:texture))
+      (mapc #'(lambda (mm) (draw mm screen)) x3d:meshes))))
 
 (defmethod draw ((item x3d:x3d-mesh) screen)
   (with-slots (x3d:coordinates x3d:texture-coordinates) item
@@ -93,52 +141,43 @@
 		x3d:coordinates texs)))))
 
 (defmethod draw-as-shadow-volume ((item x3d:x3d-geometry-object) screen)
-  (with-slots (x3d:translation x3d:scale x3d:rotation
-			       x3d:diffuse-color x3d:transparency
-			       x3d:texture x3d:meshes) item
-    (gl:with-pushed-matrix
-      (gl:rotate 90.0 1.0 0.0 0.0) 
-      (apply #'gl:translate x3d:translation)
-      (apply #'gl:scale x3d:scale)
-      (apply #'gl:rotate x3d:rotation)
-      (gl:translate  3.657 -27.515 0.0)
-      #+not
-      (gl:translate 31.102  -6.968 0.0)
-      (gl:with-pushed-attrib (:current-bit :enable-bit
-					   :color-buffer-bit
-					   :depth-buffer-bit
-					   :stencil-buffer-bit
-					   :polygon-bit)
-	(gl:color (first x3d:diffuse-color)
-		  (second x3d:diffuse-color)
-		  (third x3d:diffuse-color)
-		  x3d:transparency)
+  (with-slots (x3d:diffuse-color x3d:transparency x3d:texture x3d:meshes) item
+    (gl:with-pushed-attrib (:current-bit :enable-bit
+					 :color-buffer-bit
+					 :depth-buffer-bit
+					 :stencil-buffer-bit
+					 :polygon-bit)
+      (gl:disable :texture-2d)
+      (gl:color (first x3d:diffuse-color)
+		(second x3d:diffuse-color)
+		(third x3d:diffuse-color)
+		x3d:transparency)
 
-	(gl:color-mask nil nil nil nil)
-	(gl:enable :depth-test)
-	(gl:depth-mask nil)
-	(gl:disable :cull-face)
+      (gl:color-mask nil nil nil nil)
+      (gl:enable :depth-test)
+      (gl:depth-mask nil)
+      (gl:disable :cull-face)
 
-	(gl:enable :stencil-test)
-	(gl:stencil-mask 1)
-	(gl:clear-stencil 0)
-	(gl:clear :stencil-buffer-bit)
+      (gl:enable :stencil-test)
+      (gl:stencil-mask 1)
+      (gl:clear-stencil 0)
+      (gl:clear :stencil-buffer-bit)
 
-	(gl:enable :polygon-offset-fill)
-	(gl:polygon-offset 0.0 100.0)
+      (gl:enable :polygon-offset-fill)
+      (gl:polygon-offset 0.0 100.0)
 
-	(gl:stencil-func :always #x01 #x01)
-	(gl:stencil-op :keep :invert :keep)
-	(gl:polygon-offset 0.0 150.0)
-	(mapc #'(lambda (mm) (draw-as-shadow-volume mm screen)) x3d:meshes)
+      (gl:stencil-func :always #x01 #x01)
+      (gl:stencil-op :keep :invert :keep)
+      (gl:polygon-offset 0.0 150.0)
+      (mapc #'(lambda (mm) (draw-as-shadow-volume mm screen)) x3d:meshes)
 
-	(gl:enable :cull-face)
-	(gl:color-mask t t t t)
-	(gl:depth-mask t)
-	(gl:disable :depth-test)
-	(gl:stencil-func :equal #x01 #x01)
-	(gl:polygon-offset 0.0 175.0)
-	(mapc #'(lambda (mm) (draw-as-shadow-volume mm screen)) x3d:meshes)))))
+      (gl:enable :cull-face)
+      (gl:color-mask t t t t)
+      (gl:depth-mask t)
+      (gl:disable :depth-test)
+      (gl:stencil-func :equal #x01 #x01)
+      (gl:polygon-offset 0.0 175.0)
+      (mapc #'(lambda (mm) (draw-as-shadow-volume mm screen)) x3d:meshes))))
 
 (defmethod draw-as-shadow-volume ((item x3d:x3d-mesh) screen)
   (with-slots (x3d:coordinates x3d:texture-coordinates) item
@@ -153,3 +192,27 @@
 		  (t (gl:with-primitives :polygon
 		       (mapc #'emit-vert vvs)))))
 	    x3d:coordinates))))
+
+(defmethod draw ((item message-overlay) screen)
+  (with-slots (visible elapsed-time icon timeout timeout-callback lines) item
+    (when visible
+      (with-slots (overlays) screen
+	(when (<= timeout elapsed-time)
+	  (when timeout-callback
+	    (funcall timeout-callback item screen))
+	  (setf overlays (remove item overlays))))
+      (gl:translate 0 -100 0)
+      (draw icon screen)
+      (gl:translate 110 100 0)
+      (gl:with-pushed-attrib (:current-bit)
+	(mapc #'(lambda (ll)
+		  (gl:translate 0 -12 0)
+		  (gl:color 0 0 0 0.8)
+		  (gl:translate 2 -2 0)
+		  (draw-string ll :size 22 :align :left)
+		  (gl:translate  -2 2 0)
+		  (gl:color 0.5 0.5 1 1)
+		  (draw-string ll :size 22 :align :left)
+		  (gl:translate 0 -14 0))
+	      lines))
+      (gl:translate -110 -10 0))))

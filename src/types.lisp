@@ -42,6 +42,7 @@
              #:x3d-sky-color
              #:shape-list
              #:x3d-shape-list
+           #:get-png-as-texture-id
            #:parse))
 
 (in-package :x3d)

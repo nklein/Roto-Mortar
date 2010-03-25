@@ -186,6 +186,7 @@
 		   (8 :unsigned-byte)
 		   (16 :unsigned-short))))
       (gl:bind-texture :texture-2d texture)
+      (gl:tex-env :texture-env :texture-env-mode :modulate)
       (gl:tex-parameter :texture-2d :texture-min-filter :linear)
       (gl:tex-parameter :texture-2d :texture-mag-filter :linear)
       (gl:tex-image-2d :texture-2d 0 format width height 0 format type

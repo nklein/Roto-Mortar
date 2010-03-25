@@ -51,12 +51,10 @@
   (loop :for pos :from 0 :below (length string)
      :for cur = (zpb-ttf:find-glyph (aref string pos) font)
      :for prev = nil :then cur
-     :do (when prev
-	   (gl:translate (- (zpb-ttf:kerning-offset prev cur font)
-			    (zpb-ttf:left-side-bearing cur))
-			 0 0))
-	 (render-glyph cur (if fill :polygon :line-strip) cutoff)
-         (gl:translate (zpb-ttf:advance-width cur) 0 0)))
+     :do (render-glyph cur (if fill :polygon :line-strip) cutoff)
+         (gl:translate (zpb-ttf:advance-width cur) 0 0)
+         (when prev
+	   (gl:translate (zpb-ttf:kerning-offset prev cur font) 0 0))))
 
 (defun calculate-cutoff (font size)
   (gl:with-pushed-matrix
@@ -89,7 +87,8 @@
 (defun draw-string (string &key (size 48)
 		                (filled t)
 		                (font *font*)
-		                (cutoff nil))
+		                (cutoff nil)
+		                (align :centered))
   (unless cutoff
     (setf cutoff (calculate-cutoff font size)))
 
@@ -101,13 +100,18 @@
 	   (by2 (aref box 3)))
 
       (let ((ss (/ size (zpb-ttf:units/em font))))
-	(gl:scale ss ss ss))
+	(gl:scale ss ss 1))
 
-      (gl:translate (/ (- bx1 bx2) 2) (/ (- by1 by2) 2) 0)
+      (case align
+	(:centered (gl:translate (/ (- bx1 bx2) 2) (/ (- by1 by2) 2) 0))
+	(:left     (gl:translate 0 (/ (- by1 by2) 2) 0))
+	(:right    (gl:translate (- bx1 bx2) (/ (- by1 by2) 2) 0)))
 
       (gl:with-pushed-attrib (:current-bit :color-buffer-bit :line-bit
+					   :enable-bit
 					   :depth-buffer-bit
 				           :hint-bit :stencil-buffer-bit)
+	(gl:disable :texture-2d)
 	;; antialias lines
 	(gl:enable :blend)
 	(gl:blend-func :src-alpha :one-minus-src-alpha)
@@ -132,5 +136,5 @@
 	  (gl:disable :depth-test)
 	  (gl:color-mask t t t t)
 	  (gl:stencil-func :equal 1 1)
-	  (draw-quad bx1 by1 bx2 by2)))))
+	  (draw-quad bx1 by1 (+ bx2 (* size cutoff)) by2)))))
   cutoff)
