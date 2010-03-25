@@ -4,6 +4,7 @@
   (/ (get-internal-real-time) internal-time-units-per-second))
 
 (defmethod glut:display-window :before ((w roto-mortar-window))
+#+not
   (glut:full-screen)
   (gl:clear-color 0 0 0 0)
   (gl:cull-face :back)
@@ -63,7 +64,7 @@
   (with-slots (screen) w
     (cond
       ((eql key #\q) (unload-screen screen)
-                     (glut:close w))
+	             (glut:close w))
       (t (possible-new-screen w (key-down screen key))))))
 
 (defmethod glut:keyboard-up ((w roto-mortar-window) key xx yy)

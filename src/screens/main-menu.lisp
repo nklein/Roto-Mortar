@@ -8,7 +8,7 @@
   (:default-initargs :position '(3.657 -27.515 0.0)
                                #+not '(31.102  -6.968 0.0)
                      :initial-angle 0.0
-                     :angular-velocity 30.0))
+                     :angular-velocity -30.0))
 
 (defmethod update-item :after ((drawn-item angle-indicator-item) elapsed)
   (with-slots (angle angular-velocity) drawn-item
@@ -30,15 +30,21 @@
 (defclass distance-indicator-item (drawn-item)
   ((geometry :initform nil)
    (scale :initarg :initial-scale)
-   (position :initarg :position))
+   (angle :initarg :initial-angle)
+   (angular-velocity :initarg :angular-velocity)
+   (position :initarg :position)
+   (is-aiming :initform nil))
   (:default-initargs :position '(3.657 -27.515 0.0)
                                #+not '(31.102  -6.968 0.0)
+		     :initial-angle 0.0
+		     :angular-velocity 20.0
                      :initial-scale 1.0))
 
 (defmethod update-item :after ((drawn-item distance-indicator-item) elapsed)
-  (declare (ignore elapsed-time))
-  (with-slots (scale elapsed-time) drawn-item
-    (setf scale (+ 0.6 (* 0.4 (cos (* 10/180 elapsed-time pi)))))))
+  (with-slots (is-aiming angle scale angular-velocity) drawn-item
+    (when is-aiming
+      (incf angle (* elapsed angular-velocity pi 1/180))
+      (setf scale (+ 0.6 (* 0.4 (cos angle)))))))
 
 (defmethod draw ((drawn-item distance-indicator-item) screen)
   (with-slots (geometry visible position scale) drawn-item
@@ -56,13 +62,18 @@
 (defclass main-menu-screen (screen)
   ((angle :initform (make-instance 'angle-indicator-item))
    (distance :initform (make-instance 'distance-indicator-item))
-   (warned :initform nil)))
+   (warned :initform 0)))
 
 (defvar +warning-lines+ '(
 "The KPs fried most of our weapons controls."
 "   I got one of the mortars spinning."
 "   You can fire it with that there mouse button."
-"   Of course, that also controls the gun elevation."
+))
+
+(defvar +warning-lines-2+ '(
+"Of course, that button also controls the gun elevation."
+"   Hold down the mouse button to set the gun elevation."
+"   Release the button to fire."
 ))
 
 (defmethod load-screen progn ((screen main-menu-screen))
@@ -83,14 +94,35 @@
 (defmethod update-screen progn ((screen main-menu-screen) elapsed)
   (declare (ignore elapsed))
   (with-slots (warned elapsed-time overlays t1-angle) screen
-    (when (and (not warned) (<= 1 elapsed-time))
+    (when (and (= warned 0) (<= 1 elapsed-time))
       (push (make-message-overlay #P"billy-bob.png"
 				  :timeout 14
 				  :lines +warning-lines+)
 	    overlays)
-      (setf warned t)))
+      (setf warned 1))
+    (when (and (= warned 1) (<= 12 elapsed-time))
+      (push (make-message-overlay #P"billy-bob.png"
+				  :timeout 14
+				  :lines +warning-lines-2+)
+	    overlays)
+      (setf warned 2)))
   nil)
 
 (defmethod unload-screen progn ((screen main-menu-screen))
   (with-slots (items) screen
     (setf items nil)))
+
+(defmethod mouse-down progn ((screen main-menu-screen) button)
+  (with-slots (distance) screen
+    (with-slots (is-aiming) distance
+    (when (and (eql button :left-button) (not is-aiming))
+      (setf is-aiming t))))
+  nil)
+
+(defmethod mouse-up progn ((screen main-menu-screen) button)
+  (with-slots (distance) screen
+    (with-slots (is-aiming) distance
+      (when (and (eql button :left-button) is-aiming)
+	(format t "SHOOT!~%")
+	(setf is-aiming nil))))
+  nil)

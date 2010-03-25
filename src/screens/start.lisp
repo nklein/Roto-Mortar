@@ -31,7 +31,7 @@
   (with-slots (title-position title-angle) screen
     (gl:with-pushed-matrix
       (apply #'gl:translate title-position)
-      #+not (gl:rotate title-angle 0.0 1.0 0.0)
+      (gl:rotate title-angle 0.0 1.0 0.0)
       (gl:with-pushed-attrib (:current-bit)
 	(gl:color 0.8 0.8 0.2 1.0)
 	(draw-string "Roto Mortar" :size 96)))))
