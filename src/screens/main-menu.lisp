@@ -80,16 +80,17 @@
 				     :angular-velocity -30.0
 				     :position '(3.657 -27.515 2.0)))
    (angle-2 :initform (make-instance 'angle-indicator-item
-				     :visible t
+				     :visible nil
 				     :angular-velocity 37.0
 				     :position '(31.102 -6.968 2.0)))
    (distance-1 :initform (make-instance 'distance-indicator-item
 				        :angular-velocity 20.0
 					:position '(3.657 -27.515 2.0)))
    (distance-2 :initform (make-instance 'distance-indicator-item
-					:visible t
+					:visible nil
 					:angular-velocity 27.0
 					:position '(31.102 -6.968 2.0)))
+   (ground-geometry :initform (load-x3d-item #P"scene-baked.x3d"))
    (missile-geometry :initform (load-x3d-item #P"cube.x3d"))
    (missiles :initform nil)
    (warned :initform 0)))
@@ -109,9 +110,9 @@
 (defmethod load-screen progn ((screen main-menu-screen))
   (let ((angle-geom (load-x3d-shadow-volume #P"angle.x3d"))
 	(dist-geom (load-x3d-shadow-volume #P"distance.x3d"))
-	(scene (load-x3d-item #P"scene-baked.x3d"))
 	(base  (load-x3d-item #P"base-baked.x3d")))
-    (with-slots (items overlays distance-1 distance-2 angle-1 angle-2) screen
+    (with-slots (items overlays distance-1 distance-2 angle-1 angle-2
+		       ground-geometry) screen
       (with-slots (geometry) angle-1    (setf geometry angle-geom))
       (with-slots (geometry) angle-2    (setf geometry angle-geom))
       (with-slots (geometry) distance-1	(setf geometry dist-geom))
@@ -121,7 +122,59 @@
       (push angle-1 items)
       (push angle-2 items)
       (push base items)
-      (push scene items))))
+      (push ground-geometry items))))
+
+(defun drop-an-alien (screen)
+  (declare (ignore screen))
+  (format t "DROP ALIEN~%"))
+
+(defun fix-a-mortar (screen)
+  (let ((broken nil))
+    (with-slots (angle-1 distance-1 angle-2 distance-2) screen
+      (with-slots (visible) angle-1
+	(unless visible
+	  (push (list angle-1 distance-1 "west") broken)))
+      (with-slots (visible) angle-2
+	(unless visible
+	  (push (list angle-2 distance-2 "north") broken))))
+    (when broken
+      (let* ((mortar (nth (random (length broken)) broken))
+	     (angle (first mortar))
+	     (distance (second mortar))
+	     (line (format nil "I just fixed the ~A mortar.~%"
+			   (third mortar))))
+	(with-slots (visible) angle
+	  (setf visible t))
+	(with-slots (visible) distance
+	  (setf visible t))
+	(with-slots (overlays) screen
+	  (push (make-message-overlay #P"billy-bob.png" :lines (list line))
+		overlays))))))
+
+(defun break-a-mortar (screen)
+  (with-slots (angle-1 distance-1 angle-2 distance-2) screen
+    (with-slots ((visible-1 visible)) angle-1
+      (with-slots ((visible-2 visible)) angle-2
+	(when (and visible-1 visible-2)
+	  (let ((mortar (case (random 2)
+			  (0  (list angle-1 distance-1 "west"))
+			  (1  (list angle-2 distance-2 "north")))))
+	    (let ((angle (first mortar))
+		  (distance (second mortar))
+		  (line (format nil "The ~A mortar just failed again.~%"
+				(third mortar))))
+	      (with-slots (visible) angle
+		(setf visible nil))
+	      (with-slots (visible) distance
+		(setf visible nil))
+	      (with-slots (overlays) screen
+		(push (make-message-overlay #P"billy-bob.png"
+					    :lines (list line))
+		      overlays)))))))))
+
+(defvar +base-alien-drops-per-second+ (/ 1.0 8.0))
+(defvar +mortar-fixes-per-second+ (/ 1.0 45.0))
+(defvar +mortar-failures-per-second+ (/ 1.0 30.0))
 
 (defmethod update-screen progn ((screen main-menu-screen) elapsed)
   (declare (ignore elapsed))
@@ -132,12 +185,22 @@
 				  :lines +warning-lines+)
 	    overlays)
       (setf warned 1))
-    (when (and (= warned 1) (<= 12 elapsed-time))
+    (when (and (= warned 1) (<= 17 elapsed-time))
       (push (make-message-overlay #P"billy-bob.png"
 				  :timeout 14
 				  :lines +warning-lines-2+)
 	    overlays)
-      (setf warned 2)))
+      (setf warned 2))
+    (when (< 20.0 elapsed-time)
+      (let ((ll (* elapsed +base-alien-drops-per-second+)))
+	(when (< (exp (- ll)) (random 1.0))
+	  (drop-an-alien screen)))
+      (let ((ll (* elapsed +mortar-fixes-per-second+)))
+	(when (< (exp (- ll)) (random 1.0))
+	  (fix-a-mortar screen)))
+      (let ((ll (* elapsed +mortar-failures-per-second+)))
+	(when (< (exp (- ll)) (random 1.0))
+	  (break-a-mortar screen)))))
   nil)
 
 (defmethod unload-screen progn ((screen main-menu-screen))
