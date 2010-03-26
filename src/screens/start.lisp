@@ -1,7 +1,7 @@
 (in-package :roto-mortar)
 
 (defclass start-screen (screen)
-  ((title-position :initform (list 400.0 500.0 0.0))
+  ((title-position :initform (list 400.0 900.0 0.0))
    (title-angle :initform 0.0)
    (warned :initform nil)))
 

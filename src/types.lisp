@@ -12,6 +12,8 @@
              #:x3d-coordinate-indexes
              #:coordinates
              #:x3d-coordinates
+             #:original-coordinates
+             #:x3d-original-coordinates
              #:texture-coordinates
              #:x3d-texture-coordinates
            #:x3d-geometry-object
@@ -55,6 +57,7 @@
   ((texture-coordinate-indexes :initarg :texture-coordinate-indexes :accessor x3d-texture-coordinate-indexes :type list)
    (coordinate-indexes :initarg :coordinate-indexes :accessor x3d-coordinate-indexes :type list)
    (coordinates :initarg :coordinates :accessor x3d-coordinates :type list)
+   (original-coordinates :initarg :original-coordinates :accessor x3d-original-coordinates :type list)
    (texture-coordinates :initarg :texture-coordinates :accessor x3d-texture-coordinates :type list)))
 
 (defclass x3d-geometry-object ()

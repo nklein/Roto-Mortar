@@ -92,8 +92,38 @@
 					:position '(31.102 -6.968 2.0)))
    (ground-geometry :initform (load-x3d-item #P"scene-baked.x3d"))
    (missile-geometry :initform (load-x3d-item #P"cube.x3d"))
-   (missiles :initform nil)
-   (warned :initform 0)))
+   (alien-geometry :initform (load-x3d-item #P"torus.x3d"))
+   (aliens-eliminated :initform 0)
+   (aliens-got-through :initform 0)
+   (warned :initform 0)
+   (bail :initform nil)))
+
+(defmethod alien-got-through ((screen main-menu-screen))
+  (with-slots (aliens-got-through aliens-eliminated overlays bail) screen
+    (incf aliens-got-through)
+    (when (= 5 aliens-got-through)
+      (push (make-message-overlay #P"billy-bob.png"
+				  :lines (list "It's time to get out of here."
+					       "We're being overrun."
+					       (format nil "You got ~S aliens"
+						       aliens-eliminated))
+				  :timeout 8
+				  :timeout-callback #'(lambda (ii ss)
+							(declare (ignore ii))
+							(with-slots (bail) ss
+							  (setf bail t))))
+	    overlays))))
+
+(defmethod alien-eliminated ((screen main-menu-screen))
+  (with-slots (aliens-eliminated overlays) screen
+    (incf aliens-eliminated)
+    (when (= 0 (mod aliens-eliminated 4))
+      (push (make-message-overlay #P"billy-bob.png"
+				  :lines (list "You're doing great."
+					       (format nil "You got ~S aliens"
+						       aliens-eliminated))
+				  :timeout 4)
+	    overlays))))
 
 (defvar +warning-lines+ '(
 "The KPs fried most of our weapons controls."
@@ -124,9 +154,46 @@
       (push base items)
       (push ground-geometry items))))
 
+(defun find-closest-zz (xx yy screen)
+  (with-slots (ground-geometry) screen
+    (with-slots (geometry) ground-geometry
+      (with-slots (x3d:meshes x3d:scale x3d:translation) geometry
+	(with-slots (x3d:original-coordinates) (first x3d:meshes)
+	  (let ((sx (first x3d:scale))
+		(sy (second x3d:scale))
+		(sz (third x3d:scale))
+		(ox (first x3d:translation))
+		(oy (second x3d:translation))
+		(oz (third x3d:translation)))
+	    (labels ((dist (px py)
+		       (let ((dx (- xx (+ (* sx px) ox)))
+			     (dy (- yy (+ (* sy py) oy))))
+			 (+ (* dx dx) (* dy dy))))
+		     (find-it (coords &optional (best-dist 10000.0)
+				                (best-zz 0.0))
+		       (cond
+			 ((null coords) best-zz)
+			 (t (let* ((cc (first coords))
+				   (dd (dist (first cc) (second cc))))
+			      (if (< dd best-dist)
+				  (find-it (rest coords) dd
+					   (+ (* sz (third cc)) oz))
+				  (find-it (rest coords)
+					   best-dist best-zz)))))))
+	      (find-it x3d:original-coordinates))))))))
+
 (defun drop-an-alien (screen)
-  (declare (ignore screen))
-  (format t "DROP ALIEN~%"))
+  (let* ((aa (random pi))
+	 (rr (- (random 50.0) 25.0))
+	 (xx (* rr (cos aa)))
+	 (yy (* rr (sin aa)))
+	 (zz (find-closest-zz xx yy screen)))
+    (with-slots (alien-geometry items) screen
+      (push (make-instance 'alien
+			   :screen screen
+			   :geometry alien-geometry
+			   :initial-position (list xx yy zz))
+	    items))))
 
 (defun fix-a-mortar (screen)
   (let ((broken nil))
@@ -178,7 +245,7 @@
 
 (defmethod update-screen progn ((screen main-menu-screen) elapsed)
   (declare (ignore elapsed))
-  (with-slots (warned elapsed-time overlays t1-angle) screen
+  (with-slots (warned elapsed-time overlays t1-angle bail) screen
     (when (and (= warned 0) (<= 1 elapsed-time))
       (push (make-message-overlay #P"billy-bob.png"
 				  :timeout 14
@@ -191,7 +258,7 @@
 				  :lines +warning-lines-2+)
 	    overlays)
       (setf warned 2))
-    (when (< 20.0 elapsed-time)
+    (when (< -20.0 elapsed-time)
       (let ((ll (* elapsed +base-alien-drops-per-second+)))
 	(when (< (exp (- ll)) (random 1.0))
 	  (drop-an-alien screen)))
@@ -200,8 +267,9 @@
 	  (fix-a-mortar screen)))
       (let ((ll (* elapsed +mortar-failures-per-second+)))
 	(when (< (exp (- ll)) (random 1.0))
-	  (break-a-mortar screen)))))
-  nil)
+	  (break-a-mortar screen))))
+    (when bail
+      (make-instance 'start-screen))))
 
 (defmethod unload-screen progn ((screen main-menu-screen))
   (with-slots (items) screen

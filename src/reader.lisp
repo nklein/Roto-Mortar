@@ -154,14 +154,15 @@
 	(t (parse-coordinates string dimensions position coordinates))))))
 
 (defmethod data progn ((handler sax-handler) (item x3d-mesh) path value)
-  (with-slots (texture-coordinate-indexes coordinate-indexes coordinates texture-coordinates) item
+  (with-slots (texture-coordinate-indexes coordinate-indexes coordinates texture-coordinates original-coordinates) item
     (case path
       (:|@texCoordIndex| (setf texture-coordinate-indexes
 			       (parse-coordinate-indexes (remove #\, value))))
       (:|@coordIndex| (setf coordinate-indexes
 			    (parse-coordinate-indexes (remove #\, value))))
       (:|/Coordinate@point| (setf coordinates
-				  (parse-coordinates (remove #\, value) 3)))
+				  (parse-coordinates (remove #\, value) 3))
+	                    (setf original-coordinates (copy-seq coordinates)))
       (:|/TextureCoordinate@point|
 	                    (setf texture-coordinates
 				  (parse-coordinates (remove #\, value) 2))))))

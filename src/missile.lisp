@@ -29,6 +29,17 @@
 				 (third initial-position)))
       (when (minusp (third position))
 	(with-slots (items) screen
+	  (labels ((my-dist (aa)
+		     (with-slots ((apos position)) aa
+		       (let ((dx (- (first position) (first apos)))
+			     (dy (- (second position) (second apos))))
+			 (+ (* dx dx) (* dy dy))))))
+	    (setf items (remove-if #'(lambda (aa)
+				       (when (and (typep aa 'alien)
+						  (< (my-dist aa) 50.0))
+					 (alien-eliminated screen)
+					 t))
+				   items)))
 	  (setf items (remove item items)))))))
 
 (defmethod draw ((drawn-item missile) screen)

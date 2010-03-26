@@ -27,7 +27,8 @@
 
 (defun expand-coordinates-from-indexes (mesh)
   (with-slots (x3d:coordinate-indexes x3d:texture-coordinate-indexes
-               x3d:coordinates        x3d:texture-coordinates) mesh
+               x3d:coordinates        x3d:texture-coordinates
+	       x3d:original-coordinates) mesh
     (labels ((expand (ccs iis)
 	       (mapcar #'(lambda (ii) (nth ii ccs)) iis))
 	     (expand-tex (ccs iis)

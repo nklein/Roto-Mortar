@@ -16,7 +16,11 @@
 							      "generics"
 							      "types"
 			                                      "reader"))
+			     (:file "alien" :depends-on ("generics"
+							   "drawn-item"
+							   "package"))
 			     (:file "missile" :depends-on ("generics"
+							   "alien"
 							   "drawn-item"
 							   "package"))
 			     (:file "screen" :depends-on ("window-class"
@@ -29,6 +33,7 @@
 			     (:module "screens"
 			      :depends-on ("window-class"
 					   "missile"
+					   "alien"
 					   "screen"
 					   "font"
 					   "package")
