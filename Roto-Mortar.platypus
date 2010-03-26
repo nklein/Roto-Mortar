@@ -3975,7 +3975,7 @@
 	<key>Parameters</key>
 	<array/>
 	<key>RemainRunning</key>
-	<true/>
+	<false/>
 	<key>Role</key>
 	<string>Viewer</string>
 	<key>ScriptPath</key>
