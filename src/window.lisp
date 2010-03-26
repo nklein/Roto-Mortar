@@ -62,13 +62,14 @@
 (defmethod glut:keyboard ((w roto-mortar-window) key xx yy)
   (declare (ignore xx yy))
   (with-slots (screen) w
-    (cond
-      ((eql key #\q) (unload-screen screen)
-	             (glut:close w))
-      (t (possible-new-screen w (key-down screen key))))))
+    (case key
+      ((#\q #\Q #\x #\X #\Escape #\Tab) (unload-screen screen)
+                                        (glut:close w))
+      (otherwise  (possible-new-screen w (key-down screen key))))))
 
 (defmethod glut:keyboard-up ((w roto-mortar-window) key xx yy)
   (declare (ignore xx yy))
   (with-slots (screen) w
-    (cond
-      ((not (eql key #\q)) (possible-new-screen w (key-up screen key))))))
+    (case key
+      ((#\q #\Q #\x #\X #\Escape #\Tab) nil)
+      (otherwise  (possible-new-screen w (key-up screen key))))))

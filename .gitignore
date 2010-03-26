@@ -3,3 +3,4 @@ src/sbcl-1.0.30-darwin-x86
 systems
 src/*.fasl
 src/screens/*.fasl
+Roto-Mortar.app

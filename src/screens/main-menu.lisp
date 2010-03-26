@@ -5,14 +5,13 @@
    (angle :initarg :initial-angle)
    (position :initarg :position)
    (angular-velocity :initarg :angular-velocity))
-  (:default-initargs :position '(3.657 -27.515 0.0)
-                               #+not '(31.102  -6.968 0.0)
-                     :initial-angle 0.0
+  (:default-initargs :initial-angle -90.0
                      :angular-velocity -30.0))
 
 (defmethod update-item :after ((drawn-item angle-indicator-item) elapsed)
-  (with-slots (angle angular-velocity) drawn-item
-    (incf angle (* angular-velocity elapsed))))
+  (with-slots (visible angle angular-velocity) drawn-item
+    (when visible
+      (incf angle (* angular-velocity elapsed)))))
 
 (defmethod draw ((drawn-item angle-indicator-item) screen)
   (with-slots (geometry visible position angle) drawn-item
@@ -34,17 +33,34 @@
    (angular-velocity :initarg :angular-velocity)
    (position :initarg :position)
    (is-aiming :initform nil))
-  (:default-initargs :position '(3.657 -27.515 0.0)
-                               #+not '(31.102  -6.968 0.0)
-		     :initial-angle 0.0
-		     :angular-velocity 20.0
-                     :initial-scale 1.0))
+  (:default-initargs :initial-angle (* pi 30/180)
+		     :angular-velocity 20.0))
+
+(defun calculate-scale-for-angle (item)
+  (with-slots (angle position) item
+    (let ((vv +muzzle-velocity+)
+	  (gg +gravity-constant+)
+	  (zz (third position))
+	  (cp (cos angle))
+	  (sp (sin angle))
+	  (fudge (/ 53.32)))
+      (* vv cp (/ gg) fudge (+ (* vv sp)
+			       (sqrt (+ (* vv vv sp sp) (* 2 gg zz))))))))
+
+(defmethod initialize-instance :after ((drawn-item distance-indicator-item) &key)
+  (with-slots (scale) drawn-item
+    (setf scale (calculate-scale-for-angle drawn-item))))
 
 (defmethod update-item :after ((drawn-item distance-indicator-item) elapsed)
-  (with-slots (is-aiming angle scale angular-velocity) drawn-item
-    (when is-aiming
+  (with-slots (visible is-aiming angle scale angular-velocity) drawn-item
+    (when (and is-aiming visible)
       (incf angle (* elapsed angular-velocity pi 1/180))
-      (setf scale (+ 0.6 (* 0.4 (cos angle)))))))
+      (when (or (and (minusp angular-velocity)
+		     (< angle (* pi 45/180)))
+		(and (plusp angular-velocity)
+		     (< (* pi 85/180) angle)))
+	(setf angular-velocity (- angular-velocity)))
+      (setf scale (calculate-scale-for-angle drawn-item)))))
 
 (defmethod draw ((drawn-item distance-indicator-item) screen)
   (with-slots (geometry visible position scale) drawn-item
@@ -60,8 +76,22 @@
 	    (draw-as-shadow-volume geometry screen)))))))
 
 (defclass main-menu-screen (screen)
-  ((angle :initform (make-instance 'angle-indicator-item))
-   (distance :initform (make-instance 'distance-indicator-item))
+  ((angle-1 :initform (make-instance 'angle-indicator-item
+				     :angular-velocity -30.0
+				     :position '(3.657 -27.515 2.0)))
+   (angle-2 :initform (make-instance 'angle-indicator-item
+				     :visible t
+				     :angular-velocity 37.0
+				     :position '(31.102 -6.968 2.0)))
+   (distance-1 :initform (make-instance 'distance-indicator-item
+				        :angular-velocity 20.0
+					:position '(3.657 -27.515 2.0)))
+   (distance-2 :initform (make-instance 'distance-indicator-item
+					:visible t
+					:angular-velocity 27.0
+					:position '(31.102 -6.968 2.0)))
+   (missile-geometry :initform (load-x3d-item #P"cube.x3d"))
+   (missiles :initform nil)
    (warned :initform 0)))
 
 (defvar +warning-lines+ '(
@@ -71,9 +101,9 @@
 ))
 
 (defvar +warning-lines-2+ '(
-"Of course, that button also controls the gun elevation."
-"   Hold down the mouse button to set the gun elevation."
-"   Release the button to fire."
+"'Course, that button also does yer gun elevation."
+"   Hold down the mouse button to set elevation"
+"   then release it to fire."
 ))
 
 (defmethod load-screen progn ((screen main-menu-screen))
@@ -81,13 +111,15 @@
 	(dist-geom (load-x3d-shadow-volume #P"distance.x3d"))
 	(scene (load-x3d-item #P"scene-baked.x3d"))
 	(base  (load-x3d-item #P"base-baked.x3d")))
-    (with-slots (items overlays distance angle) screen
-      (with-slots (geometry) angle
-	(setf geometry angle-geom))
-      (with-slots (geometry) distance
-	(setf geometry dist-geom))
-      (push distance items)
-      (push angle items)
+    (with-slots (items overlays distance-1 distance-2 angle-1 angle-2) screen
+      (with-slots (geometry) angle-1    (setf geometry angle-geom))
+      (with-slots (geometry) angle-2    (setf geometry angle-geom))
+      (with-slots (geometry) distance-1	(setf geometry dist-geom))
+      (with-slots (geometry) distance-2	(setf geometry dist-geom))
+      (push distance-1 items)
+      (push distance-2 items)
+      (push angle-1 items)
+      (push angle-2 items)
       (push base items)
       (push scene items))))
 
@@ -113,16 +145,21 @@
     (setf items nil)))
 
 (defmethod mouse-down progn ((screen main-menu-screen) button)
-  (with-slots (distance) screen
-    (with-slots (is-aiming) distance
-    (when (and (eql button :left-button) (not is-aiming))
-      (setf is-aiming t))))
+  (with-slots (distance-1 distance-2) screen
+    (with-slots ((is-aiming-1 is-aiming)) distance-1
+      (with-slots ((is-aiming-2 is-aiming)) distance-2
+	(when (and (eql button :left-button) (not is-aiming-1))
+	  (setf is-aiming-1 t
+		is-aiming-2 t)))))
   nil)
 
 (defmethod mouse-up progn ((screen main-menu-screen) button)
-  (with-slots (distance) screen
-    (with-slots (is-aiming) distance
-      (when (and (eql button :left-button) is-aiming)
-	(format t "SHOOT!~%")
-	(setf is-aiming nil))))
+  (with-slots (angle-1 distance-1 angle-2 distance-2) screen
+    (with-slots ((is-aiming-1 is-aiming) (visible-1 visible)) distance-1
+      (with-slots ((is-aiming-2 is-aiming) (visible-2 visible)) distance-2
+	(when (and (eql button :left-button) is-aiming-1)
+	  (when visible-1 (start-missile screen angle-1 distance-1))
+	  (when visible-2 (start-missile screen angle-2 distance-2))
+	  (setf is-aiming-1 nil
+		is-aiming-2 nil)))))
   nil)

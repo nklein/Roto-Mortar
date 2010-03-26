@@ -16,6 +16,9 @@
 							      "generics"
 							      "types"
 			                                      "reader"))
+			     (:file "missile" :depends-on ("generics"
+							   "drawn-item"
+							   "package"))
 			     (:file "screen" :depends-on ("window-class"
 							  "generics"
 							  "drawn-item"
@@ -25,6 +28,7 @@
 							  "package"))
 			     (:module "screens"
 			      :depends-on ("window-class"
+					   "missile"
 					   "screen"
 					   "font"
 					   "package")

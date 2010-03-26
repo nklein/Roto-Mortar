@@ -9,7 +9,7 @@
 <NavigationInfo headlight="FALSE" visibilityLimit="0.0" type='"EXAMINE","ANY"' avatarSize="0.25, 1.75, 0.75" />
 <Background groundColor="0.057 0.221 0.4" skyColor="0.057 0.221 0.4" />
 
-<Transform DEF="Cube" translation="11.097 -18.001 1.113" scale="1.000000 1.000000 1.000000" rotation="-1.000000 0.000000 0.000000 1.570796">
+<Transform DEF="Cube" translation="0.000000 0.000000 0.000000" scale="1.000000 1.000000 1.000000" rotation="-1.000000 0.000000 0.000000 1.570796">
 <Shape>
 	<Appearance>
 		<Material DEF="MA_Material" diffuseColor="0.8 0.8 0.8" specularColor="0.401 0.401 0.401" emissiveColor="0.0 0.0 0.0" 

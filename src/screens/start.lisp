@@ -13,7 +13,7 @@
 (defmethod update-screen progn ((screen start-screen) elapsed)
   (with-slots (elapsed-time title-position title-angle overlays warned) screen
     (let ((pp (* (min (max (- elapsed-time 0.5) 0.0) 0.5) 2))
-	  (aa (min 4.0 (max 0.0 (- elapsed-time 0.5)))))
+	  (aa (min 4.0 (max 0.0 (- elapsed-time 1.5)))))
       (setf (second title-position) (+ (* 500.0 (- 1.0 pp))
 				       (* 200.0 pp))
 	    title-angle             (* 90.0 aa))
