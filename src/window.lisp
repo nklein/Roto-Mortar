@@ -4,7 +4,6 @@
   (/ (get-internal-real-time) internal-time-units-per-second))
 
 (defmethod glut:display-window :before ((w roto-mortar-window))
-#+not
   (glut:full-screen)
   (gl:clear-color 0 0 0 0)
   (gl:cull-face :back)
